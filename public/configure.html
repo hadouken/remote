@@ -1,0 +1,61 @@
+<div class="row">
+  <h2 class="page-header">Configuration</h2>
+
+  <p><em>Note that no requests to Hadouken are proxied - they all go directly from your
+  browser to your Hadouken instance, which is why 'localhost' and other internal URLs resolve
+  correctly.</em></p>
+
+  <form class="form-horizontal">
+    <div class="form-group">
+      <label for="url" class="col-sm-3 control-label">Hadouken URL</label>
+      <div class="col-sm-5">
+        <input type="url" class="form-control" id="url" value="http://localhost:7070/api">
+      </div>
+    </div>
+  
+    <div class="form-group">
+      <label for="authType" class="col-sm-3 control-label">Authentication type</label>
+      <div class="col-sm-4">
+        <select class="form-control" id="authType">
+          <option value="none">None</option>
+          <option value="basic">HTTP Basic</option>
+          <option value="token">Token</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="auth-type-basic" class="auth-type-container">
+      <div class="form-group">
+        <label for="basicUserName" class="col-sm-3 control-label">Username</label>
+        <div class="col-sm-4">
+          <input type="text" class="form-control" id="basicUserName" >
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="basicPassword" class="col-sm-3 control-label">Password</label>
+        <div class="col-sm-4">
+          <input type="password" class="form-control" id="basicPassword" >
+        </div>
+      </div>
+    </div>
+
+    <div id="auth-type-token" class="auth-type-container">
+      <div class="form-group">
+        <label for="token" class="col-sm-3 control-label">Token</label>
+        <div class="col-sm-4">
+          <input type="password" class="form-control" id="token" >
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="col-sm-offset-3 col-sm-10">
+        <button type="button" class="btn btn-primary" id="saveConfig">Save</button>
+        <button type="button" class="btn btn-sm btn-default" id="testConfig">Test connection</button>
+        <span id="statusInfo"></span>
+      </div>
+    </div>
+  </form>
+</div>
+

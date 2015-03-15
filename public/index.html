@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Hadouken Remote</title>
+
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/site.css" rel="stylesheet">
+  </head>
+
+  <body>
+
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#/">Hadouken Remote</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#/configure"><i class="glyphicon glyphicon-cog"></i></a>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="jumbotron hidden" id="configure-intro">
+      <div class="container">
+        <h1>Getting started</h1>
+        <p>This is the remote client for <a href="#">Hadouken</a>, a cross-platform, headless, BitTorrent client. To get started
+        you will need a running Hadouken instance and be able to connect to it from the computer you are using now. You will also
+        need the username/password (if you are using Basic Auth) or token (if you are using Token Auth).</p>
+
+        <p><a class="btn btn-primary btn-lg" href="#/configure" role="button">Configure &raquo;</a></p>
+      </div>
+    </div>
+
+    <div class="container" id="content">
+    </div>
+
+    <script src="js/libs/jquery.min.js"></script>
+    <script src="js/libs/director.min.js"></script>
+    <script src="js/libs/bootstrap.min.js"></script>
+    <script src="js/hadouken.js"></script>
+    <script src="js/views/configure.js"></script>
+    <script src="js/views/torrents.js"></script>
+    <script src="js/views/torrentDetails.js"></script>
+    <script src="js/remote.js"></script>
+  </body>
+</html>
