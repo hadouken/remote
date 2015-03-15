@@ -167,12 +167,44 @@
     };
 
     TorrentsView.prototype.removeTorrentRow = function(infoHash) {
-        console.log("Removing torrent");
+        var row = $("#torrentsList > tr[data-torrent-id='" + infoHash + "']");
+        row.remove();
     };
 
     TorrentsView.prototype.showRemoveTorrent = function(infoHash) {
+        var me = this;
+
+        var torrent = this.torrents[infoHash];
+        if(!torrent) { console.error("Torrent not found: " + infoHash); }
+
         $.get("torrent_remove.html", function(html) {
-            $(html).modal("show");
+            var dialog = $(html).modal();
+
+            dialog.on("show.bs.modal", function() {
+                dialog.find(".torrentName").text(torrent.name);
+                dialog.find("#removeTorrent").click(function(e) {
+                    e.preventDefault();
+                    var removeData = dialog.find(".removeData").is(":checked");
+
+                    me.removeTorrent(infoHash, removeData, function() {
+                        dialog.modal("hide");
+                    });
+                });
+            });
+
+            dialog.modal("show");
+        });
+    };
+
+    TorrentsView.prototype.removeTorrent = function(infoHash, removeData, callback) {
+        this.connection.rpc({
+            method: "session.removeTorrent",
+            params: [ infoHash, removeData ],
+            success: function() {
+                if(callback) {
+                    callback();
+                }
+            }
         });
     };
 

@@ -3,6 +3,7 @@
 (function (window, $) {
 
     var TORRENT_STATUS = {
+        Checking: 1,
         Downloading: 3,
         Seeding: 5
     };
@@ -56,7 +57,9 @@
             },
             data: JSON.stringify(rpc),
             success: function (data) {
-                cfg.success(data.result);
+                if(cfg.success) {
+                    cfg.success(data.result);
+                }
             },
             error: function (xhr, status, error) {
                 if(cfg.error) {
@@ -102,6 +105,8 @@
 
     Utils.prototype.toStatusString = function(torrent) {
         switch(torrent.state) {
+            case TORRENT_STATUS.Checking:
+                return "Checking files";
             case TORRENT_STATUS.Downloading:
                 return "Downloading";
             case TORRENT_STATUS.Seeding:
