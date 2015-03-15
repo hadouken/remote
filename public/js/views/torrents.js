@@ -1,30 +1,30 @@
 (function($, Hadouken) {
     Hadouken.Views = Hadouken.Views || {};
 
-    var cfg = new Hadouken.Config();
-
     function TorrentsView() {
+        this.cfg = new Hadouken.Config();
         this.timer = null;
         this.torrents = {};
     }
 
     TorrentsView.prototype.load = function() {
         Hadouken.loadPage("torrents.html", "#content", function () {
-            var remoteUrl = cfg.get("http.remote.url");
-            var authType = cfg.get("http.remote.auth.type");
+            var remoteUrl = this.cfg.get("http.remote.url");
+            var authType = this.cfg.get("http.remote.auth.type");
 
             if(!remoteUrl) {
+                $("#configure-intro").removeClass("hidden");
                 $("#noRemote").removeClass("hidden");
                 $("#showAddTorrent").attr("disabled", true);
                 return;
             }
 
             if(authType === "basic") {
-                var user = cfg.get("http.remote.auth.basic.userName");
-                var pass = cfg.get("http.remote.auth.basic.password");
+                var user = this.cfg.get("http.remote.auth.basic.userName");
+                var pass = this.cfg.get("http.remote.auth.basic.password");
                 this.connection = new Hadouken.Connection(remoteUrl, "Basic " + btoa(user + ":" + pass));
             } else if(authType === "token") {
-                var token = cfg.get("http.remote.auth.token");
+                var token = this.cfg.get("http.remote.auth.token");
                 this.connection = new Hadouken.Connection(remoteUrl, "Token " + token);
             } else {
                 this.connection = new Hadouken.Connection(remoteUrl, "");
@@ -103,17 +103,17 @@
                 for(var key in d) {
                     if(this.torrents[key]) {
                         this.torrents[key] = d[key];
-                        this.updateTorrent(this.torrents[key]);
+                        this.updateTorrentRow(this.torrents[key]);
                     } else {
                         this.torrents[key] = d[key];
-                        this.addTorrent(this.torrents[key]);
+                        this.addTorrentRow(this.torrents[key]);
                     }
                 }
 
                 for(var localKey in this.torrents) {
                     if(!d[localKey]) {
                         delete this.torrents[localKey];
-                        this.removeTorrent(localKey);
+                        this.removeTorrentRow(localKey);
                     }
                 }
 
@@ -128,9 +128,15 @@
         });
     };
 
-    TorrentsView.prototype.updateTorrent = function(torrent) {
+    TorrentsView.prototype.updateTorrentRow = function(torrent) {
         var row = $("#torrentsList > tr[data-torrent-id='" + torrent.infoHash + "']");
 
+        var queuePos = "";
+        if (torrent.queuePosition >= 0) {
+            queuePos = torrent.queuePosition;
+        }
+
+        row.find(".queuePosition").text(queuePos);
         row.find(".torrentName").text(torrent.name).attr("href", "#/torrents/" + torrent.infoHash);
         row.find(".savePath").text(torrent.savePath);
         row.find(".torrentSize").text(Hadouken.utils.toFileSize(torrent.totalSize));
@@ -143,16 +149,31 @@
             .text((torrent.progress * 100 | 0) + '%');
     };
 
-    TorrentsView.prototype.addTorrent = function(torrent) {
+    TorrentsView.prototype.addTorrentRow = function(torrent) {
         var tmpl = $($("#torrentItemTemplate").html());
+        
         tmpl.attr("data-torrent-id", torrent.infoHash);
+        
+        (function(infoHash) {
+            tmpl.find(".removeTorrent").click(function(e) {
+                e.preventDefault();
+                this.showRemoveTorrent(infoHash);
+            }.bind(this));
+        }.bind(this))(torrent.infoHash);
+
         $("#torrentsList").append(tmpl);
 
-        this.updateTorrent(torrent);
+        this.updateTorrentRow(torrent);
     };
 
-    TorrentsView.prototype.removeTorrent = function(infoHash) {
+    TorrentsView.prototype.removeTorrentRow = function(infoHash) {
         console.log("Removing torrent");
+    };
+
+    TorrentsView.prototype.showRemoveTorrent = function(infoHash) {
+        $.get("torrent_remove.html", function(html) {
+            $(html).modal("show");
+        });
     };
 
     Hadouken.Views.TorrentsView = TorrentsView;

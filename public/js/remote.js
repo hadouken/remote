@@ -13,12 +13,6 @@ $(document).ready(function () {
     if(!window.location.hash) {
         window.location.hash = "#/";
     }
-
-    var cfg = new Hadouken.Config();
-
-    if(!cfg.get("ui.configured")) {
-        $("#configure-intro").removeClass("hidden");
-    }
 });
 
 function construct(constructor, args) {

@@ -1,0 +1,9 @@
+{
+  "ftp":
+  {
+    "host": "",
+    "user": "",
+    "pass": "",
+    "remotePath": ""
+  }
+}
