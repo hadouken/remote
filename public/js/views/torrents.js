@@ -79,23 +79,60 @@
             var dialog = $(html).modal();
 
             dialog.on("show.bs.modal", function() {
+                var sourceType = "file";
+
                 dialog.find("#torrentFile").change(function() {
-                    dialog.find("#addTorrent").attr("disabled", dialog.find("#torrentFile")[0].files.length === 0);
+                    toggleAddTorrent("file");
                 }).change();
 
+                dialog.find("#torrentUrl").keyup(function() {
+                    toggleAddTorrent("url");
+                });
+
+                function toggleAddTorrent(type) {
+                    if(type === "file") {
+                        dialog.find("#addTorrent").attr("disabled", dialog.find("#torrentFile")[0].files.length === 0);
+                    } else {
+                        dialog.find("#addTorrent").attr("disabled", dialog.find("#torrentUrl").val().length === 0);
+                    }
+                }
+
+                function sourceChanged(type) {
+                    if(type === "file") {
+                        dialog.find("#sourceFile").show();
+                        dialog.find("#sourceUrl").hide();
+                    } else {
+                        dialog.find("#sourceFile").hide();
+                        dialog.find("#sourceUrl").show();
+                    }
+
+                    toggleAddTorrent(type);
+                    sourceType = type;
+                }
+
+                dialog.find("input:radio[name='sourceType']").change(function() {
+                    sourceChanged($(this).val());
+                });
+
+                sourceChanged("file");
+
                 dialog.find("#addTorrent").click(function() {
-                    var files = dialog.find("#torrentFile")[0].files;
+                    if(sourceType === "file") {
+                        var files = dialog.find("#torrentFile")[0].files;
 
-                    for(var i = 0, f; f = files[i]; i++) {
-                        var reader = new FileReader();
+                        for(var i = 0, f; f = files[i]; i++) {
+                            var reader = new FileReader();
 
-                        reader.onload = (function(file) {
-                            return function(e) {
-                                this.addFile(e.target.result.split(",")[1], dialog);
-                            }.bind(this);
-                        }.bind(this))(f);
+                            reader.onload = (function(file) {
+                                return function(e) {
+                                    this.addFile(e.target.result.split(",")[1], dialog);
+                                }.bind(this);
+                            }.bind(this))(f);
 
-                        reader.readAsDataURL(f);
+                            reader.readAsDataURL(f);
+                        }
+                    } else {
+                        this.addUrl(dialog.find("#torrentUrl").val(), dialog);
                     }
                 }.bind(this));
             }.bind(this));
@@ -113,6 +150,16 @@
             }
         });
     };
+
+    TorrentsView.prototype.addUrl = function(url, dialog) {
+        this.connection.rpc({
+            method: "session.addTorrentUri",
+            params: [ url, { } ],
+            success: function() {
+                dialog.modal("hide");
+            }
+        });
+    }
 
     var chartStep = 5;
     var currentStep = 0;

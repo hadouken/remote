@@ -9,9 +9,28 @@
       <div class="modal-body">
         <form class="form-horizontal">
           <div class="form-group">
+            <label for="sourceType" class="col-sm-3 control-label">Source</label>
+            <div class="col-sm-9">
+              <label class="radio-inline">
+                <input type="radio" name="sourceType" value="file" checked="checked"> File
+              </label>
+              <label class="radio-inline">
+                <input type="radio" name="sourceType" value="url"> URL/Magnet link
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group" id="sourceFile">
             <label for="torrentFile" class="col-sm-3 control-label">Torrent file</label>
             <div class="col-sm-9">
               <input type="file" accept=".torrent" class="form-control" id="torrentFile">
+            </div>
+          </div>
+
+          <div class="form-group" id="sourceUrl">
+            <label for="torrentUrl" class="col-sm-3 control-label">Url</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="torrentUrl">
             </div>
           </div>
         </form>
