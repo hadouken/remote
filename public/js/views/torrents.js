@@ -159,7 +159,6 @@
                 }
 
                 if(currentStep % chartStep === 0) {
-                    console.log("update chart");
                     var dlTotal = 0;
                     var dlMean = 0;
                     var ulTotal = 0;
