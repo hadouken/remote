@@ -25,12 +25,13 @@
         <th>Status</th>
         <th class="right-align">DL Speed</th>
         <th class="right-align">UL Speed</th>
+        <th style="width: 60px;"></th>
       </tr>
     </thead>
 
     <tbody id="torrentsList">
       <tr class="nothing-to-see-here">
-        <td colspan="8"><em>No torrents.</em></td>
+        <td colspan="9"><em>No torrents.</em></td>
       </tr>
     </tbody>
   </table>
@@ -62,6 +63,10 @@
       <td class="torrentState"></td>
       <td class="downloadSpeed right-align"></td>
       <td class="uploadSpeed right-align"></td>
+      <td class="right-align">
+        <button type="button" class="btn btn-primary pauseTorrent"><i class="glyphicon glyphicon-pause"></i></button>
+        <button type="button" class="btn btn-primary resumeTorrent"><i class="glyphicon glyphicon-play"></i></button>
+      </td>
     </tr>
   </script>
 </div>

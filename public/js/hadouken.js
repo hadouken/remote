@@ -104,6 +104,10 @@
     };
 
     Utils.prototype.toStatusString = function(torrent) {
+        if(torrent.isPaused) {
+            return "Paused";
+        }
+        
         switch(torrent.state) {
             case TORRENT_STATUS.Checking:
                 return "Checking files";

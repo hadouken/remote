@@ -136,6 +136,14 @@
             queuePos = torrent.queuePosition;
         }
 
+        if(torrent.isPaused) {
+            row.find(".resumeTorrent").show();
+            row.find(".pauseTorrent").hide();
+        } else {
+            row.find(".resumeTorrent").hide();
+            row.find(".pauseTorrent").show();
+        }
+
         row.find(".queuePosition").text(queuePos);
         row.find(".torrentName").text(torrent.name).attr("href", "#/torrents/" + torrent.infoHash);
         row.find(".savePath").text(torrent.savePath);
@@ -150,6 +158,7 @@
     };
 
     TorrentsView.prototype.addTorrentRow = function(torrent) {
+        var me = this;
         var tmpl = $($("#torrentItemTemplate").html());
         
         tmpl.attr("data-torrent-id", torrent.infoHash);
@@ -157,9 +166,19 @@
         (function(infoHash) {
             tmpl.find(".removeTorrent").click(function(e) {
                 e.preventDefault();
-                this.showRemoveTorrent(infoHash);
-            }.bind(this));
-        }.bind(this))(torrent.infoHash);
+                me.showRemoveTorrent(infoHash);
+            });
+
+            tmpl.find(".pauseTorrent").click(function(e) {
+                e.preventDefault();
+                me.pauseTorrent(infoHash);
+            });
+
+            tmpl.find(".resumeTorrent").click(function(e) {
+                e.preventDefault();
+                me.resumeTorrent(infoHash);
+            });
+        })(torrent.infoHash);
 
         $("#torrentsList").append(tmpl);
 
@@ -193,6 +212,20 @@
             });
 
             dialog.modal("show");
+        });
+    };
+
+    TorrentsView.prototype.pauseTorrent = function(infoHash) {
+        this.connection.rpc({
+            method: "torrent.pause",
+            params: [ infoHash ]
+        });
+    };
+
+    TorrentsView.prototype.resumeTorrent = function(infoHash) {
+        this.connection.rpc({
+            method: "torrent.resume",
+            params: [ infoHash ]
         });
     };
 
