@@ -9,8 +9,6 @@
 
     TorrentsView.prototype.load = function() {
         Hadouken.loadPage("torrents.html", "#content", function () {
-            this.loadChart();
-
             var remoteUrl = this.cfg.get("http.remote.url");
             var authType = this.cfg.get("http.remote.auth.type");
 
@@ -40,34 +38,6 @@
             this.fetch();
             this.timer = setInterval(this.fetch.bind(this), 1000);
         }.bind(this));
-    };
-
-    TorrentsView.prototype.loadChart = function() {
-        var data = {
-            labels: ["60s", "55s", "50s", "45s", "40s", "35s", "30s", "25s", "20s", "15s", "10s", "5s", "0"],
-            datasets: [
-                {
-                    label: "Total DL",
-                    fillColor: "rgba(108,154,51,0.2)",
-                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                },
-                {
-                    label: "Total UL",
-                    fillColor: "rgba(170,79,57,0.2)",
-                    data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                }
-            ]
-        };
-
-        // Get the context of the canvas element we want to select
-        var ctx = document.getElementById("speed").getContext("2d");
-        this.chart = new Chart(ctx).Line(data, {
-            animation: true,
-            animationEasing: "easInSine",
-            scaleLabel: "<%= Hadouken.utils.toSpeed(value) %>",
-            pointDot: false,
-            bezierCurve: false
-        });
     };
 
     TorrentsView.prototype.unload = function() {
@@ -161,11 +131,6 @@
         });
     }
 
-    var chartStep = 5;
-    var currentStep = 0;
-    var dlSteps = [0, 0, 0, 0, 0];
-    var ulSteps = [0, 0, 0, 0, 0];
-
     TorrentsView.prototype.fetch = function() {
         this.connection.rpc({
             method: "session.getTorrents",
@@ -182,9 +147,6 @@
                 // if the key does not exist, add
                 // if we have key which is not in the result, remove
 
-                var totalUploadSpeed = 0;
-                var totalDownloadSpeed = 0;
-
                 for(var key in d) {
                     if(this.torrents[key]) {
                         this.torrents[key] = d[key];
@@ -193,9 +155,6 @@
                         this.torrents[key] = d[key];
                         this.addTorrentRow(this.torrents[key]);
                     }
-
-                    totalDownloadSpeed += this.torrents[key].downloadRate;
-                    totalUploadSpeed += this.torrents[key].uploadRate;
                 }
 
                 for(var localKey in this.torrents) {
@@ -204,35 +163,6 @@
                         this.removeTorrentRow(localKey);
                     }
                 }
-
-                if(currentStep % chartStep === 0) {
-                    var dlTotal = 0;
-                    var dlMean = 0;
-                    var ulTotal = 0;
-                    var ulMean = 0;
-
-                    $.each(dlSteps, function() { dlTotal += this; });
-                    if(dlTotal > 0) { dlMean = (dlTotal/chartStep)};
-
-                    $.each(ulSteps, function() { ulTotal += this; });
-                    if(ulTotal > 0) { ulMean = (ulTotal/chartStep)};
-
-                    // Transpose chart point values
-                    for(var i = 0; i < this.chart.datasets[0].points.length - 1; i++) {
-                        this.chart.datasets[0].points[i].value = this.chart.datasets[0].points[i+1].value;
-                        this.chart.datasets[1].points[i].value = this.chart.datasets[1].points[i+1].value;
-                    }
-
-                    this.chart.datasets[0].points[this.chart.datasets[0].points.length - 1].value = dlMean;
-                    this.chart.datasets[1].points[this.chart.datasets[0].points.length - 1].value = ulMean;
-                    this.chart.update();
-                } else {
-                    dlSteps[currentStep % chartStep] = totalDownloadSpeed;
-                    ulSteps[currentStep % chartStep] = totalUploadSpeed;
-                }
-
-                currentStep += 1;
-
             }.bind(this),
             error: function (xhr, status, error) {
                 if (status === "error" && !error) {
@@ -280,6 +210,11 @@
         tmpl.attr("data-torrent-id", torrent.infoHash);
         
         (function(infoHash) {
+            tmpl.find(".moveTorrent").click(function(e) {
+                e.preventDefault();
+                me.showMoveTorrent(infoHash);
+            });
+
             tmpl.find(".removeTorrent").click(function(e) {
                 e.preventDefault();
                 me.showRemoveTorrent(infoHash);
@@ -304,6 +239,34 @@
     TorrentsView.prototype.removeTorrentRow = function(infoHash) {
         var row = $("#torrentsList > tr[data-torrent-id='" + infoHash + "']");
         row.remove();
+    };
+
+    TorrentsView.prototype.showMoveTorrent = function(infoHash) {
+        var me = this;
+
+        var torrent = this.torrents[infoHash];
+        if(!torrent) { console.error("Torrent not found: " + infoHash); }
+
+        $.get("torrent_move.html", function(html) {
+            var dialog = $(html).modal();
+
+            dialog.on("show.bs.modal", function() {
+                dialog.find(".torrentName").text(torrent.name);
+                dialog.find(".torrentCurrentPath").text(torrent.savePath);
+                dialog.find(".torrentDestinationPath").val(torrent.savePath);
+
+                dialog.find("#moveTorrent").click(function(e) {
+                    e.preventDefault();
+                    var destination = dialog.find(".torrentDestinationPath").val();
+
+                    me.moveTorrent(infoHash, destination, function() {
+                        dialog.modal("hide");
+                    });
+                });
+            });
+
+            dialog.modal("show");
+        });
     };
 
     TorrentsView.prototype.showRemoveTorrent = function(infoHash) {
@@ -342,6 +305,18 @@
         this.connection.rpc({
             method: "torrent.resume",
             params: [ infoHash ]
+        });
+    };
+
+    TorrentsView.prototype.moveTorrent = function(infoHash, destinationPath, callback) {
+        this.connection.rpc({
+            method: "torrent.moveStorage",
+            params: [ infoHash, destinationPath ],
+            success: function() {
+                if(callback) {
+                    callback();
+                }
+            }
         });
     };
 

@@ -14,8 +14,6 @@
 
   <div class="alert alert-danger hidden" id="noRemote">No Hadouken instance configured.</div>
 
-  <canvas id="speed" width="1140" height="100"></canvas>
-
   <table class="table table-striped table-hover">
     <thead>
       <tr>
@@ -42,7 +40,9 @@
     <tr>
       <td class="queuePosition"></td>
       <td>
-        <div class="torrentName"></div>
+        <div>
+          <a href="#" class="torrentName"></a>
+        </div>
         <small class="savePath"></div>
       </td>
       <td class="center-align">
@@ -52,6 +52,8 @@
             <span class="caret"></span>
           </button>
           <ul class="dropdown-menu">
+            <li><a href="#" class="moveTorrent"><i class="glyphicon glyphicon-transfer"></i> Move</a></li>
+            <li class="divider"></li>
             <li><a href="#" class="removeTorrent"><i class="glyphicon glyphicon-trash"></i> Remove</a></li>
           </ul>
         </div>

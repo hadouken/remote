@@ -41,6 +41,24 @@
         this.authHeader = authHeader;
     }
 
+    Connection.get = function() {
+        var cfg = new Config();
+
+        var remoteUrl = cfg.get("http.remote.url");
+        var authType = cfg.get("http.remote.auth.type");
+
+        if(authType === "basic") {
+            var user = cfg.get("http.remote.auth.basic.userName");
+            var pass = cfg.get("http.remote.auth.basic.password");
+            return new Connection(remoteUrl, "Basic " + btoa(user + ":" + pass));
+        } else if(authType === "token") {
+            var token = cfg.get("http.remote.auth.token");
+            return new Connection(remoteUrl, "Token " + token);
+        } else {
+            return new Connection(remoteUrl, "");
+        }
+    };
+
     Connection.prototype.rpc = function(cfg) {
         var rpc = {
             jsonrpc: "2.0",
@@ -49,12 +67,18 @@
             params: cfg.params
         };
 
+        var headers = {
+            "Content-Type": "application/json"
+        };
+
+        if(this.authHeader !== "") {
+            headers["Authorization"] = this.authHeader;
+        }
+
         $.ajax({
             type: "POST",
             url: this.url,
-            headers: {
-                "Authorization": this.authHeader
-            },
+            headers: headers,
             data: JSON.stringify(rpc),
             success: function (data) {
                 if(cfg.success) {
@@ -116,8 +140,6 @@
             case TORRENT_STATUS.Seeding:
                 return "Seeding";
         }
-
-        console.log(torrent.state);
     };
 
     window.Hadouken = {
