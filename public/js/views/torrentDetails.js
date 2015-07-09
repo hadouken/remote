@@ -19,8 +19,23 @@
             Hadouken.loadPage("torrent_details.html", "#content", function () {
                 $(".torrentName").text(torrent.name);
 
-                // Hook up tab view
+                if(torrent.error) {
+                    $(".torrentErrorText").text(torrent.error);
+                } else {
+                    $("#torrentError").hide();
+                }
+
                 var that = this;
+
+                $("#torrentError").on("closed.bs.alert", function() {
+                    that.connection.rpc({
+                        method: "torrent.clearError",
+                        params: [torrent.infoHash],
+                        success: function() {}
+                    });
+                });
+
+                // Hook up tab view
                 $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
                     that.timerTarget = $(e.target).attr("aria-controls");
                     clearInterval(that.timer);
@@ -54,6 +69,10 @@
                 callback(torrent);
 
                 $(".torrentSavePath").text(torrent.savePath);
+            }.bind(this),
+            error: function(xhr, status, error) {
+                Hadouken.utils.connectionLost(xhr, status, error);
+                this.unload();
             }.bind(this)
         });
     };
@@ -74,6 +93,10 @@
                         this.addFileRow(this.files[key]);
                     }
                 }
+            }.bind(this),
+            error: function(xhr, status, error) {
+                Hadouken.utils.connectionLost(xhr, status, error);
+                this.unload();
             }.bind(this)
         });
     };
@@ -104,6 +127,10 @@
                         this.removePeerRow(localKey);
                     }
                 }
+            }.bind(this),
+            error: function(xhr, status, error) {
+                Hadouken.utils.connectionLost(xhr, status, error);
+                this.unload();
             }.bind(this)
         });
     };
@@ -124,8 +151,23 @@
                         this.addTrackerRow(this.trackers[key]);
                     }
                 }
+            }.bind(this),
+            error: function(xhr, status, error) {
+                Hadouken.utils.connectionLost(xhr, status, error);
+                this.unload();
             }.bind(this)
         });
+    }
+
+    TorrentDetailsView.prototype.getFilePriority = function(prio) {
+        switch(prio) {
+            case 0:
+                return "Do not download";
+            case 1:
+                return "Normal";
+            default:
+                return "High";  
+        }
     }
 
     TorrentDetailsView.prototype.addFileRow = function(file) {
@@ -141,6 +183,8 @@
 
         row.find(".fileName").text(file.path);
         row.find(".fileSize").text(Hadouken.utils.toFileSize(file.size));
+
+        row.find(".filePriority").text(this.getFilePriority(file.priority));
 
         var progress = file.progress / file.size;
 
@@ -161,7 +205,7 @@
         var row = $("#peerList > tr[data-peer-id='" + peer.ip + ":" + peer.port + "']");
 
         row.find(".peerRemote").text(peer.ip + ":" + peer.port);
-        row.find(".peerCountry").text(peer.country);
+        row.find(".peerCountry").attr("src", "images/flags/" + peer.country.toLowerCase() + ".png");
         row.find(".peerClient").text(peer.client);
     };
 

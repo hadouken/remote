@@ -3,8 +3,11 @@
 (function (window, $) {
 
     var TORRENT_STATUS = {
+        Queued: 0,
         Checking: 1,
+        DownloadingMetadata: 2,
         Downloading: 3,
+        Finished: 4,
         Seeding: 5
     };
 
@@ -96,18 +99,29 @@
     function Utils() {
     }
 
-    Utils.prototype.connectionLost = function() {
-        if(this.hasShownConnectionLost) {
-            return;
-        }
-
-        this.hasShownConnectionLost = true;
-
+    Utils.prototype.connectionLost = function(xhr, status, error) {
+        console.log(arguments);
         $.get("connection_lost.html", function (d) {
             $(d).modal({
                 backdrop: "static",
-                keyboard: false
-            });
+                keyboard: false,
+                show: false
+            }).on("show.bs.modal", function() {
+                var m = $(this);
+
+                var errorText = xhr.status + " - " + error + ".";
+
+                if(xhr.status === 0 && error === "") {
+                    errorText = "Connection refused.";
+                }
+
+                m.find(".errorText").text(errorText);
+                m.find(".btn-configure").on("click", function(e) {
+                    e.preventDefault();
+                    m.modal('hide');
+                    location.href = $(this).attr("href");
+                });
+            }).modal('show');
         });
     }
 
@@ -128,18 +142,30 @@
     };
 
     Utils.prototype.toStatusString = function(torrent) {
+        if(torrent.error) {
+            return "Error";
+        }
+        
         if(torrent.isPaused) {
             return "Paused";
         }
-        
+
         switch(torrent.state) {
+            case TORRENT_STATUS.Queued:
+                return "Queued";
             case TORRENT_STATUS.Checking:
                 return "Checking files";
+            case TORRENT_STATUS.DownloadingMetadata:
+                return "Downloading metadata";
             case TORRENT_STATUS.Downloading:
                 return "Downloading";
+            case TORRENT_STATUS.Finished:
+                return "Finished";
             case TORRENT_STATUS.Seeding:
                 return "Seeding";
         }
+
+        return "Unknown state: " + torrent.state;
     };
 
     window.Hadouken = {

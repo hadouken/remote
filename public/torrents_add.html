@@ -33,6 +33,63 @@
               <input type="text" class="form-control" id="torrentUrl">
             </div>
           </div>
+
+          <div class="form-group">
+            <label for="savePath" class="col-sm-3 control-label">Save path</label>
+            <div class="col-sm-9">
+              <input type="text" class="form-control" id="savePath" value="<default>">
+            </div>
+          </div>
+
+          <div id="torrentInformation">
+            <hr />
+
+            <div class="form-group">
+              <label class="col-sm-3 control-label">Name</label>
+              <div class="col-sm-9">
+                <p class="form-control-static"><span class="torrentName"></span></p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="col-sm-3 control-label">Size</label>
+              <div class="col-sm-9">
+                <p class="form-control-static"><span class="torrentSize"></span></p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="col-sm-3 control-label">Trackers</label>
+              <div class="col-sm-9">
+                <textarea class="form-control torrentTrackers" rows="5"></textarea>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="col-sm-3 control-label">Files</label>
+              <div class="col-sm-9">
+                <table class="table table-striped table-hover">
+                  <thead>
+                    <tr>
+                      <th style="width: 20px;"></th>
+                      <th>Name</th>
+                      <th class="right-align" style="width: 100px;">Size</th>
+                    </tr>
+                  </thead>
+                  <tbody id="fileList">
+                  </tbody>
+                </table>
+
+                <script type="text/template" id="fileItemTemplate">
+                  <tr>
+                    <td><input type="checkbox" class="shouldDownload" checked="checked" /></td>
+                    <td><span class="fileName"></span></td>
+                    <td class="right-align"><span class="fileSize"></span></td>
+                  </tr>
+                </script>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
       

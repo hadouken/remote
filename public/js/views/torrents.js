@@ -3,6 +3,7 @@
 
     function TorrentsView() {
         this.cfg = new Hadouken.Config();
+        this.connection = Hadouken.Connection.get();
         this.timer = null;
         this.torrents = {};
     }
@@ -10,24 +11,12 @@
     TorrentsView.prototype.load = function() {
         Hadouken.loadPage("torrents.html", "#content", function () {
             var remoteUrl = this.cfg.get("http.remote.url");
-            var authType = this.cfg.get("http.remote.auth.type");
 
             if(!remoteUrl) {
                 $("#configure-intro").removeClass("hidden");
                 $("#noRemote").removeClass("hidden");
                 $("#showAddTorrent").attr("disabled", true);
                 return;
-            }
-
-            if(authType === "basic") {
-                var user = this.cfg.get("http.remote.auth.basic.userName");
-                var pass = this.cfg.get("http.remote.auth.basic.password");
-                this.connection = new Hadouken.Connection(remoteUrl, "Basic " + btoa(user + ":" + pass));
-            } else if(authType === "token") {
-                var token = this.cfg.get("http.remote.auth.token");
-                this.connection = new Hadouken.Connection(remoteUrl, "Token " + token);
-            } else {
-                this.connection = new Hadouken.Connection(remoteUrl, "");
             }
 
             $("#showAddTorrent").click(function(e) {
@@ -50,6 +39,7 @@
 
             dialog.on("show.bs.modal", function() {
                 var sourceType = "file";
+                var filePriorities = [];
 
                 dialog.find("#torrentFile").change(function() {
                     toggleAddTorrent("file");
@@ -71,9 +61,16 @@
                     if(type === "file") {
                         dialog.find("#sourceFile").show();
                         dialog.find("#sourceUrl").hide();
+
+                        if(dialog.find("#torrentFile")[0].files.length > 0) {
+                            dialog.find("#torrentInformation").show();
+                        } else {
+                            dialog.find("#torrentInformation").hide();
+                        }
                     } else {
                         dialog.find("#sourceFile").hide();
                         dialog.find("#sourceUrl").show();
+                        dialog.find("#torrentInformation").hide();
                     }
 
                     toggleAddTorrent(type);
@@ -86,23 +83,115 @@
 
                 sourceChanged("file");
 
+                function showTorrentInfo(torrent) {
+                    dialog.find(".torrentName").text(torrent.info.name);
+
+                    // Set trackers
+                    var trackers = dialog.find(".torrentTrackers");
+                    trackers.text("");
+
+                    if(torrent["announce-list"]) {
+                        var tiers = torrent["announce-list"];
+
+                        for(var i = 0; i < tiers.length; i++) {
+                            var tier = tiers[i];
+
+                            for(var j = 0; j < tier.length; j++) {
+                                trackers.text(trackers.text() + tier[j] + "\n");
+                            }
+
+                            trackers.text(trackers.text() + "\n");
+                        }
+                    } else {
+                        trackers.text(torrent["announce"]);
+                    }
+
+                    // Set files
+                    var totalSize = torrent.info.length;
+                    filePriorities = [];
+
+                    dialog.find("#fileList").empty();
+
+                    if(torrent.info.files) {
+                        // Multi-file
+                        totalSize = 0;
+
+                        for(var i = 0; i < torrent.info.files.length; i++) {
+                            var file = torrent.info.files[i];
+                            totalSize += file.length;
+
+                            var tmpl = $(dialog.find("#fileItemTemplate").html());
+                            dialog.find("#fileList").append(tmpl);
+                            tmpl.find(".fileName").text(file.path.join("/"));
+                            tmpl.find(".fileSize").text(Hadouken.utils.toFileSize(file.length));
+
+                            filePriorities.push(1);
+
+                            (function(fileIndex) {
+                                tmpl.find(".shouldDownload").on("click", function() {
+                                    var checked = $(this).is(":checked");
+                                    filePriorities[fileIndex] = checked ? 1 : 0;
+                                });
+                            })(i);
+                        }
+                    } else {
+                        var tmpl = $(dialog.find("#fileItemTemplate").html());
+                        dialog.find("#fileList").append(tmpl);
+                        tmpl.find(".fileName").text(torrent.info.name);
+                        tmpl.find(".fileSize").text(Hadouken.utils.toFileSize(totalSize));
+                        tmpl.find(".shouldDownload").attr("disabled", true);
+
+                        filePriorities.push(1);
+                    }
+
+                    dialog.find(".torrentSize").text(Hadouken.utils.toFileSize(totalSize));
+                }
+
+                dialog.find("#torrentFile").on("change", function(e) {
+                    if(!e.target.files.length) {
+                        dialog.find("#torrentInformation").hide();
+                        return;
+                    }
+
+                    dialog.find("#torrentInformation").show();
+
+                    var reader = new FileReader();
+                    reader.onload = function(f) {
+                        var buf = f.target.result;
+                        var dec = Bencode.decode(buf);
+                        showTorrentInfo(dec);
+                        dialog.modal("handleUpdate");
+                    };
+                    reader.readAsBinaryString(e.target.files[0]);
+                });
+
                 dialog.find("#addTorrent").click(function() {
+                    var params = {};
+
+                    var savePath = dialog.find("#savePath").val();
+                    if(savePath !== "<default>" && savePath !== "") {
+                        params.savePath = savePath;
+                    }
+
                     if(sourceType === "file") {
                         var files = dialog.find("#torrentFile")[0].files;
+
+                        // Set parameters specific for files
+                        params.filePriorities = filePriorities;
 
                         for(var i = 0, f; f = files[i]; i++) {
                             var reader = new FileReader();
 
                             reader.onload = (function(file) {
                                 return function(e) {
-                                    this.addFile(e.target.result.split(",")[1], dialog);
+                                    this.addFile(e.target.result.split(",")[1], params, dialog);
                                 }.bind(this);
                             }.bind(this))(f);
 
                             reader.readAsDataURL(f);
                         }
                     } else {
-                        this.addUrl(dialog.find("#torrentUrl").val(), dialog);
+                        this.addUrl(dialog.find("#torrentUrl").val(), params, dialog);
                     }
                 }.bind(this));
             }.bind(this));
@@ -111,20 +200,20 @@
         }.bind(this));
     };
 
-    TorrentsView.prototype.addFile = function(data, dialog) {
+    TorrentsView.prototype.addFile = function(data, params, dialog) {
         this.connection.rpc({
             method: "session.addTorrentFile",
-            params: [ data, { } ],
+            params: [ data, params ],
             success: function (r) {
                 dialog.modal("hide");
             }
         });
     };
 
-    TorrentsView.prototype.addUrl = function(url, dialog) {
+    TorrentsView.prototype.addUrl = function(url, params, dialog) {
         this.connection.rpc({
             method: "session.addTorrentUri",
-            params: [ url, { } ],
+            params: [ url, params ],
             success: function() {
                 dialog.modal("hide");
             }
@@ -165,11 +254,8 @@
                 }
             }.bind(this),
             error: function (xhr, status, error) {
-                if (status === "error" && !error) {
-                    // Unspecified error...
-                    Hadouken.utils.connectionLost();
-                    clearInterval(this.timer);
-                }
+                clearInterval(this.timer);
+                Hadouken.utils.connectionLost(xhr, status, error);
             }.bind(this)
         });
     };
@@ -190,6 +276,29 @@
             row.find(".pauseTorrent").show();
         }
 
+        if(torrent.error) {
+            row.addClass("danger");
+        } else {
+            row.removeClass("danger");
+        }
+
+        var progressBar = row.find(".progress-bar");
+        progressBar.removeClass("progress-bar-success progress-bar-warning");
+
+        switch(torrent.state) {
+            case 1:
+                progressBar.addClass("progress-bar-warning");
+                break;
+            case 4:
+            case 5:
+                progressBar.addClass("progress-bar-success");
+                break;
+        }
+
+        progressBar
+            .css({ width: (torrent.progress * 100 | 0) + '%'})
+            .text((torrent.progress * 100 | 0) + '%');
+
         row.find(".queuePosition").text(queuePos);
         row.find(".torrentName").text(torrent.name).attr("href", "#/torrents/" + torrent.infoHash);
         row.find(".savePath").text(torrent.savePath);
@@ -197,10 +306,6 @@
         row.find(".torrentState").text(Hadouken.utils.toStatusString(torrent));
         row.find(".downloadSpeed").text(Hadouken.utils.toSpeed(torrent.downloadRate));
         row.find(".uploadSpeed").text(Hadouken.utils.toSpeed(torrent.uploadRate));
-
-        row.find(".progress-bar")
-            .css({ width: (torrent.progress * 100 | 0) + '%'})
-            .text((torrent.progress * 100 | 0) + '%');
     };
 
     TorrentsView.prototype.addTorrentRow = function(torrent) {

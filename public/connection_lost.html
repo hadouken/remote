@@ -6,13 +6,19 @@
       </div>
 
       <div class="modal-body">
-        <p>The connection to your Hadouken instance was dropped. Perhaps the service went down
-        or your internet connection gave up.</p>
+        <p>Could not connect to your Hadouken instance. The status returned from the server
+        was,</p>
 
-        <p>Reload this page (Ctrl+R) or press the 'Reload' button to try again.</p>
+        <ul>
+          <li><span class="errorText"></span></li>
+        </ul>
+
+        <p>Reload this page (Ctrl+R) or press the 'Reload' button to try again or head
+        over to <a href="#/configure" class="btn-configure">the configuration page</a> to re-configure the client.</p>
       </div>
       
       <div class="modal-footer">
+        <a class="btn btn-link btn-configure" href="#/configure">Configure</a>
         <button type="button" class="btn btn-primary" onclick="location.reload();">Reload</button>
       </div>
     </div>
